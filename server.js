@@ -6,6 +6,7 @@ const cors = require('cors');
 const path = require('path');
 const dotenv = require('dotenv');
 const restaurantRoutes = require('./routes/restaurantRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Register restaurantRoutes middleware
 app.use('/api/v1', restaurantRoutes);
+app.use('/api/auth', userRoutes);
 
 mongoose
   .connect(process.env.MONGODB_URI)

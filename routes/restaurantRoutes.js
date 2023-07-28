@@ -1,9 +1,10 @@
 const express = require('express');
+const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const authMiddleware = require('../middleware/authMiddleware');
 const restaurantController = require('../controller/restaurantController');
 
-const router = express.Router();
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
@@ -16,10 +17,10 @@ const storage = multer.diskStorage({
 // Create multer instance with storage configuration
 const upload = multer({ storage });
 
-router.get('/restaurants', restaurantController.getAllRestaurants);
-router.get('/restaurants/:id', restaurantController.getRestaurantById);
-router.post('/restaurants', upload.single('image'), restaurantController.createRestaurant);
-router.put('/restaurants/:id', upload.single('image'), restaurantController.updateRestaurant);
-router.delete('/restaurants/:id', restaurantController.deleteRestaurant);
+router.get('/restaurants', authMiddleware, restaurantController.getAllRestaurants);
+router.get('/restaurants/:id', authMiddleware, restaurantController.getRestaurantById);
+router.post('/restaurants', upload.single('image'), authMiddleware, restaurantController.createRestaurant);
+router.put('/restaurants/:id', upload.single('image'), authMiddleware, restaurantController.updateRestaurant);
+router.delete('/restaurants/:id', authMiddleware, restaurantController.deleteRestaurant);
 
 module.exports = router;
