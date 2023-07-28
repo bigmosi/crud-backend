@@ -4,7 +4,10 @@ const debug = require('debug')('server');
 const chalk = require('chalk');
 const cors = require('cors');
 const path = require('path');
+const dotenv = require('dotenv');
 const restaurantRoutes = require('./routes/restaurantRoutes');
+
+dotenv.config();
 
 const PORT = process.env.PORT || 4000;
 const app = express();
@@ -18,7 +21,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/v1', restaurantRoutes);
 
 mongoose
-  .connect('mongodb://localhost:27017/restaurantDB')
+  .connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB');
     app.listen(PORT, () => {
