@@ -8,7 +8,16 @@ const router = express.Router();
 
 router.post('/signup', async (req, res, next) => {
   try {
-    const { username, password } = req.body;
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(422).json({ message: 'Username, email, and password are required' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(422).json({ message: 'Invalid email format' });
+    }
 
     const existingUser = await User.findOne({ username });
     if (existingUser) {
@@ -17,7 +26,7 @@ router.post('/signup', async (req, res, next) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = new User({ username, password: hashedPassword });
+    const user = new User({ username, email, password: hashedPassword });
     const newUser = await user.save();
 
     res.status(201).json(newUser);
