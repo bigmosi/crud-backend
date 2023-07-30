@@ -1,9 +1,9 @@
 const express = require('express');
-const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const Restaurant = require('../models/restaurantModel');
 const authMiddleware = require('../middleware/authMiddleware');
-const restaurantController = require('../controller/restaurantController');
+const mongoose = require('mongoose');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -14,13 +14,103 @@ const storage = multer.diskStorage({
   },
 });
 
-// Create multer instance with storage configuration
 const upload = multer({ storage });
 
-router.get('/restaurants', authMiddleware, restaurantController.getAllRestaurants);
-router.get('/restaurants/:id', authMiddleware, restaurantController.getRestaurantById);
-router.post('/restaurants', upload.single('image'), authMiddleware, restaurantController.createRestaurant);
-router.put('/restaurants/:id', upload.single('image'), authMiddleware, restaurantController.updateRestaurant);
-router.delete('/restaurants/:id', authMiddleware, restaurantController.deleteRestaurant);
+const router = express.Router();
+
+router.get('/', async (req, res, next) => {
+  try {
+    const restaurants = await Restaurant.find({});
+    res.status(200).json(restaurants);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/:id', async (req, res, next) => {
+    try {
+      const { id } = req.params;
+  
+      // Check if the provided id is a valid ObjectId
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: 'Invalid restaurant ID' });
+      }
+  
+      const restaurant = await Restaurant.findById(id);
+  
+      if (!restaurant) {
+        return res.status(404).json({ message: 'Restaurant not found' });
+      }
+  
+      res.status(200).json(restaurant);
+    } catch (error) {
+      next(error);
+    }
+  });
+  
+router.post('/', authMiddleware.authenticateUser, upload.single('image'), async (req, res, next) => {
+  try {
+    const { name, cuisineType, location } = req.body;
+    const imageFile = req.file;
+    const userId = req.user._id;
+
+    const restaurant = new Restaurant({
+      name,
+      cuisineType,
+      location,
+      image: imageFile.filename,
+      owner: userId,
+    });
+
+    const newRestaurant = await restaurant.save();
+    res.status(201).json(newRestaurant);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.put('/:id',authMiddleware.authenticateUser, upload.single('image'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, cuisineType, location } = req.body;
+    const imagePath = req.file ? req.file.filename : null;
+    const userId = req.user._id;
+    console.log(userId);
+
+    const restaurant = await Restaurant.findById(id);
+    if (!restaurant || restaurant.owner.toString() !== userId.toString()) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    restaurant.name = name;
+    restaurant.cuisineType = cuisineType;
+    restaurant.location = location;
+    if (imagePath) {
+      restaurant.image = imagePath;
+    }
+
+    const updatedRestaurant = await restaurant.save();
+    res.json(updatedRestaurant);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/:id', authMiddleware.authenticateUser, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const restaurant = await Restaurant.findById(id);
+    if (!restaurant || restaurant.owner.toString() !== userId.toString()) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    await restaurant.remove();
+    res.status(200).json({ message: 'Restaurant deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;
