@@ -19,9 +19,11 @@ app.use(cors());
 app.use('/restaurants', restaurantRoutes);
 app.use('/users', userRoutes);
 
+console.log('MONGO_URI:', process.env.MONGO_URI);
+
 // Connect to MongoDB
 mongoose
-  .connect(process.env.MONGO_URI)
+  .connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB');
     app.listen(PORT, () => {

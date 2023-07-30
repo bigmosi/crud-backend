@@ -48,26 +48,24 @@ router.get('/:id', async (req, res, next) => {
     }
   });
   
-router.post('/', authMiddleware.authenticateUser, upload.single('image'), async (req, res, next) => {
-  try {
-    const { name, cuisineType, location } = req.body;
-    const imageFile = req.file;
-    const userId = req.user._id;
-
-    const restaurant = new Restaurant({
-      name,
-      cuisineType,
-      location,
-      image: imageFile.filename,
-      owner: userId,
-    });
-
-    const newRestaurant = await restaurant.save();
-    res.status(201).json(newRestaurant);
-  } catch (error) {
-    next(error);
-  }
-});
+  router.post('/', upload.single('image'), async (req, res, next) => {
+    try {
+      const { name, cuisineType, location } = req.body;
+      const imageFile = req.file;
+  
+      const restaurant = new Restaurant({
+        name,
+        cuisineType,
+        location,
+        image: imageFile.filename,
+      });
+  
+      const newRestaurant = await restaurant.save();
+      res.status(201).json(newRestaurant);
+    } catch (error) {
+      next(error);
+    }
+  });  
 
 router.put('/:id',authMiddleware.authenticateUser, upload.single('image'), async (req, res, next) => {
   try {
@@ -96,18 +94,16 @@ router.put('/:id',authMiddleware.authenticateUser, upload.single('image'), async
   }
 });
 
-router.delete('/:id', authMiddleware.authenticateUser, async (req, res, next) => {
+router.delete('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
 
-    const restaurant = await Restaurant.findById(id);
-    if (!restaurant || restaurant.owner.toString() !== userId.toString()) {
-      return res.status(401).json({ message: 'Unauthorized' });
+    const restaurant = await Restaurant.findByIdAndDelete(id);
+    if (!restaurant) {
+      return res.status(404).json({ message: 'Restaurant not found' });
     }
 
-    await restaurant.remove();
-    res.status(200).json({ message: 'Restaurant deleted successfully' });
+    res.status(200).json({ message: 'Restaurant deleted successfully', data: {} });
   } catch (error) {
     next(error);
   }
